@@ -1,0 +1,85 @@
+from flask import Flask, request, render_template, redirect, url_for, session, flash
+import sqlite3
+from e_service import hash_password, verify_password
+
+app = Flask(__name__)
+app.secret_key = 'your_secret_key_here'
+
+
+def get_db():
+    conn = sqlite3.connect('database.db')
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def login_required(role=None):
+    def decorator(f):
+        def wrapper(*args, **kwargs):
+            if 'user_id' not in session:
+                return redirect(url_for('login'))
+            if role and session.get('role') != role:
+                return "Access denied.", 403
+            return f(*args, **kwargs)
+        wrapper.__name__ = f.__name__
+        return wrapper
+    return decorator
+
+
+@app.route('/')
+def home():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    role = session.get('role')
+    if role == 'admin':
+        return redirect(url_for('admin_dashboard'))
+    elif role == 'lecturer':
+        return redirect(url_for('lecturer_dashboard'))
+    elif role == 'student':
+        return redirect(url_for('student_dashboard'))
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+        conn = get_db()
+        user = conn.execute(
+            'SELECT * FROM users WHERE email = ?', (email,)
+        ).fetchone()
+        conn.close()
+        if user and verify_password(password, user['password']):
+            session['user_id'] = user['id']
+            session['role'] = user['role']
+            session['full_name'] = user['full_name']
+            return redirect(url_for('home'))
+        flash('Invalid email or password.')
+    return render_template('login.html')
+
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
+
+
+@app.route('/admin/dashboard')
+@login_required(role='admin')
+def admin_dashboard():
+    return render_template('admin/dashboard.html')
+
+
+@app.route('/lecturer/dashboard')
+@login_required(role='lecturer')
+def lecturer_dashboard():
+    return render_template('lecturer/dashboard.html')
+
+
+@app.route('/student/dashboard')
+@login_required(role='student')
+def student_dashboard():
+    return render_template('student/dashboard.html')
+
+
+if __name__ == '__main__':
+    app.run(debug=True)
