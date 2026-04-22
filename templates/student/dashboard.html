@@ -1,9 +1,11 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="card mt-4 p-4" style="max-width: 400px;">
-    <h4>Dashboard</h4>
-
-    <h5>Welcome {{ session['full_name'] }}</h5>
-</div>
+    <div class="p-5 mb-4 bg-white rounded shadow-sm">
+        <h1>Dashboard</h1>
+        <p class="text-muted">Student {{ session['full_name'] }}</p>
+        <div class="d-flex gap-3 mt-4">
+            <a href="/" class="btn btn-dark btn-lg">Home</a>
+        </div>
+    </div>
 {% endblock %}

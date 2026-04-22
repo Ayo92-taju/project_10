@@ -81,5 +81,35 @@ def student_dashboard():
     return render_template('student/dashboard.html')
 
 
+@app.route('/admin/departments', methods=['GET'])
+@login_required(role='admin')
+def get_departments():
+    conn = get_db()
+    departments = conn.execute('SELECT * FROM departments').fetchall()
+    conn.close()
+    return render_template('admin/departments.html', departments=departments)
+
+
+@app.route('/admin/departments', methods=['POST'])
+@login_required(role='admin')
+def add_department():
+    name = request.form['name']
+    conn = get_db()
+    conn.execute('INSERT INTO departments (name) VALUES (?)', (name,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for('get_departments'))
+
+
+@app.route('/admin/departments/delete/<int:department_id>', methods=['POST'])
+@login_required(role='admin')
+def delete_department(department_id):
+    conn = get_db()
+    conn.execute('DELETE FROM departments WHERE id = ?', (department_id,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for('get_departments'))
+
+
 if __name__ == '__main__':
     app.run(debug=True)
