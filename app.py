@@ -111,5 +111,47 @@ def delete_department(department_id):
     return redirect(url_for('get_departments'))
 
 
+@app.route('/admin/sessions', methods=['GET'])
+@login_required(role='admin')
+def get_sessions():
+    conn = get_db()
+    sessions = conn.execute('SELECT * FROM sessions').fetchall()
+    conn.close()
+    return render_template('admin/sessions.html', sessions=sessions)
+
+
+@app.route('/admin/sessions', methods=['POST'])
+@login_required(role='admin')
+def add_session():
+    academic_year = request.form['academic_year']
+    semester = request.form['semester']
+    conn = get_db()
+    conn.execute('INSERT INTO sessions (academic_year, semester) VALUES (?, ?)', (academic_year, semester))
+    conn.commit()
+    conn.close()
+    return redirect(url_for('get_sessions'))
+
+
+@app.route('/admin/sessions/delete/<int:session_id>', methods=['POST'])
+@login_required(role='admin')
+def delete_session(session_id):
+    conn = get_db()
+    conn.execute('DELETE FROM sessions WHERE id = ?', (session_id,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for('get_sessions'))
+
+
+@app.route('/admin/sessions/set_current/<int:session_id>', methods=['POST'])
+@login_required(role='admin')
+def set_current(session_id):
+    conn = get_db()
+    conn.execute('UPDATE sessions SET is_current = 0')
+    conn.execute('UPDATE sessions SET is_current = 1 WHERE id = ?', (session_id,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for('get_sessions'))
+
+
 if __name__ == '__main__':
     app.run(debug=True)
